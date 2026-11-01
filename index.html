@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>வாய் திற, offer பிடி!</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@600;800&family=Mukta+Malar:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#5a1020;--bg2:#3d0a16;--gold:#f2b21b;--leaf:#1f6b3a;--paper:#fff8ec;--ink:#2a0a10;--red:#c8261b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#4a0c19;--bg2:#2e0711}}
+:root[data-theme="dark"]{--bg:#4a0c19;--bg2:#2e0711}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--paper);font-family:"Mukta Malar","Noto Sans Tamil",system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:none}
+h1,h2,.big{font-family:"Baloo Thambi 2","Noto Sans Tamil",system-ui,sans-serif;font-weight:800;line-height:1.1}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 0%,var(--bg) 0,var(--bg2) 100%);z-index:5}
+.screen.on{display:flex}
+h1{font-size:clamp(34px,9vw,52px);color:var(--gold);max-width:14ch}
+h2{font-size:30px;color:var(--gold)}
+p{max-width:34ch;font-size:17px;line-height:1.5}
+.small{font-size:14px;opacity:.8}
+.btn{font:inherit;font-weight:600;font-size:18px;border:0;border-radius:14px;padding:14px 26px;min-width:240px;cursor:pointer;background:var(--gold);color:var(--ink)}
+.btn.alt{background:transparent;color:var(--paper);border:2px solid var(--gold)}
+.btn:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
+.btn:disabled{opacity:.5}
+.tiers{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.tiers span{background:var(--leaf);border-radius:10px;padding:6px 12px;font-size:15px}
+#game{position:fixed;inset:0;display:none;z-index:2}
+#game.on{display:block}
+video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);background:var(--bg2)}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.hud{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;justify-content:space-between;padding:0 18px;font-size:26px;font-family:"Baloo Thambi 2",system-ui,sans-serif;font-weight:800;color:var(--paper);text-shadow:0 2px 6px #000a}
+.bar{position:absolute;left:18px;right:18px;top:calc(env(safe-area-inset-top,0px) + 56px);height:8px;background:#0006;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--gold);transform-origin:left}
+.coupon{background:var(--paper);color:var(--ink);border-radius:18px;padding:18px 26px;border:3px dashed var(--red)}
+.coupon .big{font-size:44px;color:var(--red)}
+.coupon code{display:block;font-size:26px;font-weight:600;letter-spacing:.12em;margin-top:6px}
+#msg{min-height:22px;color:var(--gold);font-size:15px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<section class="screen on" id="s-start">
+  <div style="font-size:64px" aria-hidden="true">😮🍬</div>
+  <h1 id="shopName"></h1>
+  <p>வாய் திறந்து விழுற இனிப்புகள பிடிங்க. 30 விநாடில எவ்வளவு பிடிக்கறீங்களோ, அவ்வளவு offer!</p>
+  <div class="tiers" id="tiers"></div>
+  <button class="btn" id="bFace">முகத்தால் விளையாடு</button>
+  <button class="btn alt" id="bTouch">விரலால் விளையாடு</button>
+  <div id="msg" role="status"></div>
+  <p class="small">உங்க முகப் படம் எங்கயும் upload ஆகாது. எல்லாம் உங்க phone-லயே நடக்கும்.</p>
+</section>
+
+<section id="game" aria-label="Game">
+  <video id="vid" playsinline muted hidden></video>
+  <canvas id="cv"></canvas>
+  <div class="hud"><span id="score">0</span><span id="time">30</span></div>
+  <div class="bar"><i id="fill"></i></div>
+</section>
+
+<section class="screen" id="s-end">
+  <h2 id="endTitle"></h2>
+  <div class="coupon">
+    <div class="big" id="off"></div>
+    <div>உங்க coupon code</div>
+    <code id="code"></code>
+  </div>
+  <p id="endNote"></p>
+  <button class="btn" id="bShare">WhatsApp-ல share பண்ணு</button>
+  <button class="btn alt" id="bCopy">Code copy பண்ணு</button>
+  <p class="small" id="again"></p>
+</section>
+
+<script>
+// ===== கடை settings: இங்க மாத்துங்க =====
+const CFG = {
+  shop: "ஸ்ரீ லக்ஷ்மி இனிப்பகம்",
+  prefix: "SWEET",
+  seconds: 30,
+  tiers: [[0,5],[8,10],[15,15],[22,20]],   // [குறைந்தபட்ச score, discount %]
+  validDays: 7,
+  items: ["🍬","🍩","🥮","🍪","🪙"]
+};
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const KEY = "ffg_result";
+let mode = "touch", lm = null, stream = null;
+
+$("shopName").textContent = CFG.shop;
+document.title = CFG.shop + " – offer game";
+$("tiers").innerHTML = CFG.tiers.map(t => `<span>${t[0]}+ → ${t[1]}%</span>`).join("");
+
+function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k, v);}catch(e){ return null; } }
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); $("game").classList.remove("on"); if(id==="game") $("game").classList.add("on"); else $(id).classList.add("on"); }
+function discountFor(n){ let d = CFG.tiers[0][1]; CFG.tiers.forEach(t => { if(n >= t[0]) d = t[1]; }); return d; }
+function makeCode(){ const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for(let i=0;i<4;i++) s += c[Math.floor(Math.random()*c.length)]; return CFG.prefix + "-" + s; }
+
+// ===== Face tracking (MediaPipe). Model load ஆகலன்னா touch mode-க்கு மாறும் =====
+async function initFace(){
+  const base = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+  const m = await import(base + "/vision_bundle.mjs");
+  const fs = await m.FilesetResolver.forVisionTasks(base + "/wasm");
+  lm = await m.FaceLandmarker.createFromOptions(fs, {
+    baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task" },
+    runningMode:"VIDEO", numFaces:1
+  });
+  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user", width:640, height:480 }, audio:false });
+  const v = $("vid"); v.srcObject = stream; v.hidden = false; await v.play();
+}
+const timeout = (ms) => new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms));
+
+$("bFace").onclick = async () => {
+  $("msg").textContent = "Camera தயாராகுது…"; $("bFace").disabled = true;
+  try { await Promise.race([initFace(), timeout(15000)]); mode = "face"; start(); }
+  catch(e){ mode = "touch"; $("msg").textContent = "Camera இப்போ வேலை செய்யல. விரலால் விளையாடலாம்."; $("bFace").disabled = false; setTimeout(start, 1200); }
+};
+$("bTouch").onclick = () => { mode = "touch"; start(); };
+
+// ===== Game =====
+const cv = $("cv"), ctx = cv.getContext("2d");
+let W, H, dpr, items, score, left, last, spawn, mouth, running, raf;
+function resize(){ dpr = Math.min(devicePixelRatio||1, 2); W = innerWidth; H = innerHeight; cv.width = W*dpr; cv.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+addEventListener("resize", resize);
+addEventListener("pointermove", e => { if(mode==="touch") mouth.x = e.clientX; });
+addEventListener("pointerdown", e => { if(mode==="touch") mouth.x = e.clientX; });
+
+function start(){
+  resize();
+  items = []; score = 0; left = CFG.seconds; spawn = 0; last = performance.now();
+  mouth = { x: W/2, y: H*0.8, open: true, r: 46 };
+  $("score").textContent = "0"; running = true;
+  show("game"); raf = requestAnimationFrame(loop);
+}
+
+function readFace(){
+  const v = $("vid"); if(!lm || v.readyState < 2) return;
+  const res = lm.detectForVideo(v, performance.now());
+  const p = res.faceLandmarks && res.faceLandmarks[0]; if(!p){ mouth.open = false; return; }
+  const vw = v.videoWidth, vh = v.videoHeight, sc = Math.max(W/vw, H/vh);
+  const ox = (W - vw*sc)/2, oy = (H - vh*sc)/2;
+  const mid = { x:(p[13].x + p[14].x)/2, y:(p[13].y + p[14].y)/2 };
+  mouth.x = W - (mid.x*vw*sc + ox); mouth.y = mid.y*vh*sc + oy;
+  const faceH = Math.abs(p[10].y - p[152].y) || 1;
+  mouth.open = Math.abs(p[14].y - p[13].y) / faceH > 0.045;
+  mouth.r = Math.max(36, faceH*vh*sc*0.16);
+}
+
+function loop(t){
+  if(!running) return;
+  const dt = Math.min((t-last)/1000, 0.05); last = t; left -= dt;
+  if(mode==="face") readFace(); else { mouth.y = H*0.8; mouth.open = true; }
+  spawn -= dt;
+  if(spawn <= 0){
+    const bad = Math.random() < 0.12;
+    items.push({ x: 30 + Math.random()*(W-60), y:-30, v: 150 + Math.random()*120 + (CFG.seconds-left)*3, e: bad ? "🌶️" : CFG.items[Math.floor(Math.random()*CFG.items.length)], bad });
+    spawn = 0.55 + Math.random()*0.35;
+  }
+  ctx.clearRect(0,0,W,H); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = "40px serif";
+  for(let i=items.length-1;i>=0;i--){
+    const it = items[i]; it.y += it.v*dt;
+    if(mouth.open && Math.hypot(it.x-mouth.x, it.y-mouth.y) < mouth.r){
+      score = Math.max(0, score + (it.bad ? -2 : 1)); $("score").textContent = score; items.splice(i,1); continue;
+    }
+    if(it.y > H+40){ items.splice(i,1); continue; }
+    ctx.fillText(it.e, it.x, it.y);
+  }
+  ctx.lineWidth = 4; ctx.strokeStyle = "#f2b21b"; ctx.beginPath(); ctx.arc(mouth.x, mouth.y, mouth.r, 0, 7); ctx.stroke();
+  if(mode==="touch"){ ctx.font = (mouth.r*1.4)+"px serif"; ctx.fillText("😮", mouth.x, mouth.y); }
+  $("time").textContent = Math.max(0, Math.ceil(left));
+  $("fill").style.transform = "scaleX(" + Math.max(0, left/CFG.seconds) + ")";
+  if(left <= 0) return finish();
+  raf = requestAnimationFrame(loop);
+}
+
+function stopCam(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; } $("vid").hidden = true; }
+
+function finish(){
+  running = false; stopCam();
+  const d = discountFor(score), code = makeCode();
+  const exp = new Date(Date.now() + CFG.validDays*864e5).toLocaleDateString("ta-IN");
+  const r = { score, d, code, exp };
+  if(!qs.has("demo")) store(KEY, JSON.stringify(r));
+  showResult(r, false);
+}
+
+function showResult(r, again){
+  $("endTitle").textContent = again ? "நீங்க ஏற்கனவே விளையாடிட்டீங்க!" : r.score + " பிடிச்சீங்க! 🎉";
+  $("off").textContent = r.d + "% தள்ளுபடி";
+  $("code").textContent = r.code;
+  $("endNote").textContent = "Billing-ல இந்த code-ஐ காட்டுங்க. " + r.exp + " வரை செல்லும். ஒரு தடவ மட்டும் பயன்படுத்தலாம்.";
+  $("again").textContent = qs.has("demo") ? "Demo mode: எத்தனை தடவயும் விளையாடலாம். பக்கத்த refresh பண்ணுங்க." : "ஒரு phone-க்கு ஒரு தடவ மட்டும் விளையாடலாம்.";
+  show("s-end");
+}
+
+$("bShare").onclick = async () => {
+  const txt = CFG.shop + "-ல game விளையாடி " + $("off").textContent + " ஜெயிச்சேன்! 🎉 உங்களுக்கும் முயற்சி பண்ணுங்க: " + location.href.split("?")[0];
+  try{ if(navigator.share){ await navigator.share({ text: txt }); return; } }catch(e){}
+  location.href = "https://wa.me/?text=" + encodeURIComponent(txt);
+};
+$("bCopy").onclick = async () => {
+  try{ await navigator.clipboard.writeText($("code").textContent); $("bCopy").textContent = "Copy ஆச்சு ✓"; }catch(e){ $("bCopy").textContent = "Code-ஐ நீண்ட நேரம் அழுத்தி copy பண்ணுங்க"; }
+};
+
+// ஏற்கனவே விளையாடியிருந்தா அதே coupon-ஐ காட்டு
+if(!qs.has("demo")){ const s = store(KEY); if(s){ try{ showResult(JSON.parse(s), true); }catch(e){} } }
+</script>
+</body>
+</html>
