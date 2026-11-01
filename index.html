@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>வாய் திற, offer பிடி!</title>
+<title>IIST Book Shop & GreenPulse – offer game</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@600;800&family=Mukta+Malar:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#5a1020;--bg2:#3d0a16;--gold:#f2b21b;--leaf:#1f6b3a;--paper:#fff8ec;--ink:#2a0a10;--red:#c8261b;
@@ -43,9 +43,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
 <body>
 
 <section class="screen on" id="s-start">
-  <div style="font-size:64px" aria-hidden="true">😮🍬</div>
+  <div style="font-size:64px" aria-hidden="true">😮📚</div>
   <h1 id="shopName"></h1>
-  <p>வாய் திறந்து விழுற இனிப்புகள பிடிங்க. 30 விநாடில எவ்வளவு பிடிக்கறீங்களோ, அவ்வளவு offer!</p>
+  <p>வாய் திறந்து விழுற புத்தகம், pen-கள பிடிங்க. 🌱 Seed pen பிடிச்சா 2 points! 🥤 Plastic பாட்டில் பிடிச்சா points குறையும். 30 விநாடில எவ்வளவு பிடிக்கறீங்களோ, அவ்வளவு offer!</p>
   <div class="tiers" id="tiers"></div>
   <button class="btn" id="bFace">முகத்தால் விளையாடு</button>
   <button class="btn alt" id="bTouch">விரலால் விளையாடு</button>
@@ -69,6 +69,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
   </div>
   <p id="endNote"></p>
   <button class="btn" id="bShare">WhatsApp-ல share பண்ணு</button>
+  <button class="btn alt" id="bAgain">மறுபடி விளையாடு</button>
   <button class="btn alt" id="bCopy">Code copy பண்ணு</button>
   <p class="small" id="again"></p>
 </section>
@@ -76,12 +77,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
 <script>
 // ===== கடை settings: இங்க மாத்துங்க =====
 const CFG = {
-  shop: "ஸ்ரீ லக்ஷ்மி இனிப்பகம்",
-  prefix: "SWEET",
+  shop: "IIST Book Shop & GreenPulse Seed Pens",
+  prefix: "IIST",
   seconds: 30,
-  tiers: [[0,5],[8,10],[15,15],[22,20]],   // [குறைந்தபட்ச score, discount %]
+  tiers: [[0,3],[10,5],[18,10]],   // [குறைந்தபட்ச score, discount %]
   validDays: 7,
-  items: ["🍬","🍩","🥮","🍪","🪙"]
+  items: ["📚","📖","✏️","🖊️","🌱"]   // 🌱 = seed pen (2 points)
 };
 const $ = id => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
@@ -154,7 +155,7 @@ function loop(t){
   spawn -= dt;
   if(spawn <= 0){
     const bad = Math.random() < 0.12;
-    items.push({ x: 30 + Math.random()*(W-60), y:-30, v: 150 + Math.random()*120 + (CFG.seconds-left)*3, e: bad ? "🌶️" : CFG.items[Math.floor(Math.random()*CFG.items.length)], bad });
+    items.push({ x: 30 + Math.random()*(W-60), y:-30, v: 150 + Math.random()*120 + (CFG.seconds-left)*3, e: bad ? "🥤" : CFG.items[Math.floor(Math.random()*CFG.items.length)], bad });
     spawn = 0.55 + Math.random()*0.35;
   }
   ctx.clearRect(0,0,W,H); ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -162,7 +163,7 @@ function loop(t){
   for(let i=items.length-1;i>=0;i--){
     const it = items[i]; it.y += it.v*dt;
     if(mouth.open && Math.hypot(it.x-mouth.x, it.y-mouth.y) < mouth.r){
-      score = Math.max(0, score + (it.bad ? -2 : 1)); $("score").textContent = score; items.splice(i,1); continue;
+      score = Math.max(0, score + (it.bad ? -2 : it.e==="🌱" ? 2 : 1)); $("score").textContent = score; items.splice(i,1); continue;
     }
     if(it.y > H+40){ items.splice(i,1); continue; }
     ctx.fillText(it.e, it.x, it.y);
@@ -182,16 +183,15 @@ function finish(){
   const d = discountFor(score), code = makeCode();
   const exp = new Date(Date.now() + CFG.validDays*864e5).toLocaleDateString("ta-IN");
   const r = { score, d, code, exp };
-  if(!qs.has("demo")) store(KEY, JSON.stringify(r));
   showResult(r, false);
 }
 
 function showResult(r, again){
-  $("endTitle").textContent = again ? "நீங்க ஏற்கனவே விளையாடிட்டீங்க!" : r.score + " பிடிச்சீங்க! 🎉";
+  $("endTitle").textContent = r.score + " points! 🎉";
   $("off").textContent = r.d + "% தள்ளுபடி";
   $("code").textContent = r.code;
   $("endNote").textContent = "Billing-ல இந்த code-ஐ காட்டுங்க. " + r.exp + " வரை செல்லும். ஒரு தடவ மட்டும் பயன்படுத்தலாம்.";
-  $("again").textContent = qs.has("demo") ? "Demo mode: எத்தனை தடவயும் விளையாடலாம். பக்கத்த refresh பண்ணுங்க." : "ஒரு phone-க்கு ஒரு தடவ மட்டும் விளையாடலாம்.";
+  $("again").textContent = "உங்க best score-ஐ மேல போகணுமா? மறுபடி விளையாடலாம்!";
   show("s-end");
 }
 
@@ -200,12 +200,11 @@ $("bShare").onclick = async () => {
   try{ if(navigator.share){ await navigator.share({ text: txt }); return; } }catch(e){}
   location.href = "https://wa.me/?text=" + encodeURIComponent(txt);
 };
+$("bAgain").onclick = () => { $("msg").textContent = ""; $("bFace").disabled = false; show("s-start"); };
 $("bCopy").onclick = async () => {
   try{ await navigator.clipboard.writeText($("code").textContent); $("bCopy").textContent = "Copy ஆச்சு ✓"; }catch(e){ $("bCopy").textContent = "Code-ஐ நீண்ட நேரம் அழுத்தி copy பண்ணுங்க"; }
 };
 
-// ஏற்கனவே விளையாடியிருந்தா அதே coupon-ஐ காட்டு
-if(!qs.has("demo")){ const s = store(KEY); if(s){ try{ showResult(JSON.parse(s), true); }catch(e){} } }
 </script>
 </body>
 </html>
